@@ -72,6 +72,38 @@
 			}
 		};
 
+		class lavaWall 
+		{
+			constructor(xpos, ypos, width, height, timer)
+			{	
+				this.m_xpos = xpos;
+				this.m_ypos = ypos;
+				this.m_width = width;
+				this.m_height = height;
+
+				this.m_timer = timer;
+			}
+
+			moveWal(xpos)
+			{
+				this.m_timer++;
+
+				if(this.m_timer >= 400)
+				{
+					this.m_xpos += map.tileWidth;
+					this.m_timer = 0;				
+				}
+
+				this.m_xpos -= xpos;
+			}
+
+			drawWall()
+			{
+				ctx.drawImage(imgWall, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+			}
+		}
+
+		var lava = new lavaWall(-width+40, map.tileHeight, width, height-80, 0);
 
 		var isKeyPressed = false;
 		var flipped = false;
@@ -216,6 +248,8 @@
 			player.x += player.velX;
 			player.y += player.velY;
 
+			//update lava Wall
+			lava.moveWal(player.velX);
 			
 			ctx.clearRect(0, 0, width, height);
 			
@@ -237,6 +271,9 @@
 					}
 				}
 			}
+
+			//lavaWall
+			lava.drawWall();
 			
 			//Player Sprite
 			if(flipped)
