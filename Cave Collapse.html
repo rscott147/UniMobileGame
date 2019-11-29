@@ -33,11 +33,19 @@
 		var frameTimeMax = 0.017;	
 		var spriteWidth = 74;
 		var spriteHeight = 86;
-		var img = new Image();
+		var playerSprite = new Image();
 		
 		//tile variables
 		var imgWall = new Image();
 		var imgPath = new Image();
+
+		var imgCrate = new Image();
+		var imgRock = new Image();
+		var imgGem = new Image();
+		var imgGem2 = new Image();
+		var imgGem3 = new Image();
+
+		var imgLava = new Image();
 		
 		var obstacles = new Array();
 
@@ -52,24 +60,39 @@
 				this.m_height = height;
 			}
 
-			
-		}
-
-		class Obstacle extends StaticImage
-		{
-			constructor(xpos, ypos, width, height)
-			{
-				super(xpos, ypos, width, height)
-			}
-
 			move(xpos)
 			{
 				this.m_xpos -= xpos;
 			}
 
+		}
+
+		class Obstacle extends StaticImage
+		{
+			constructor(xpos, ypos, width, height, type)
+			{
+				super(xpos, ypos, width, height)
+				this.m_type = type;
+			}
+
 			draw()
 			{
-				ctx.drawImage(imgWall, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+				if(this.m_type === 1)
+				{
+					ctx.drawImage(imgCrate, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+				}
+				else if(this.m_type === 2)
+				{
+					ctx.drawImage(imgGem, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+				}
+				else if(this.m_type === 3)
+				{
+					ctx.drawImage(imgGem2, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+				}
+				else if(this.m_type === 4)
+				{
+					ctx.drawImage(imgGem3, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+				}
 			}
 		}
 
@@ -84,13 +107,49 @@
 					//random number between 1 and 100
 					var rng = Math.floor((Math.random() * 100) + 1);
 					
-					if(rng >= 50)
+					if(rng >= 40 && rng < 85)
 					{
 						var tile = map.getTile(m_xpos, i+1);
 						switch(tile)
 						{
 							case 1:
-								list.push(new Obstacle(m_xpos*40, (i+1)*40, 40, 40))
+								list.push(new Obstacle(m_xpos*40, (i+1)*40, 40, 40, 1))
+								break;
+							default:
+								break;
+						}
+					}
+					else if(rng >= 85 && rng < 92)
+					{
+						var tile = map.getTile(m_xpos, i+1);
+						switch(tile)
+						{
+							case 1:
+								list.push(new Obstacle(m_xpos*40, (i+1)*40, 40, 40, 2))
+								break;
+							default:
+								break;
+						}
+					}
+					else if(rng >= 92 && rng < 99)
+					{
+						var tile = map.getTile(m_xpos, i+1);
+						switch(tile)
+						{
+							case 1:
+								list.push(new Obstacle(m_xpos*40, (i+1)*40, 40, 40, 3))
+								break;
+							default:
+								break;
+						}
+					}
+					else if(rng >= 99)
+					{
+						var tile = map.getTile(m_xpos, i+1);
+						switch(tile)
+						{
+							case 1:
+								list.push(new Obstacle(m_xpos*40, (i+1)*40, 40, 40, 4))
 								break;
 							default:
 								break;
@@ -144,16 +203,18 @@
 				this.m_height = height;
 
 				this.m_timer = timer;
+				this.moveTime = 400;
 			}
 
 			moveWal(xpos)
 			{
 				this.m_timer++;
 
-				if(this.m_timer >= 400)
+				if(this.m_timer >= this.moveTime)
 				{
 					this.m_xpos += map.tileWidth;
-					this.m_timer = 0;				
+					this.m_timer = 0;
+					this.moveTime--;
 				}
 
 				this.m_xpos -= xpos;
@@ -161,7 +222,7 @@
 
 			drawWall()
 			{
-				ctx.drawImage(imgWall, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+				ctx.drawImage(imgLava, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
 			}
 		}
 
@@ -192,10 +253,16 @@
 			canvas.width = width;
 			canvas.height = height;
 			
-			img.src = 'braidSpriteSheet.png';
+			playerSprite.src = 'braidSpriteSheet.png';
 			
 			imgWall.src = 'Wall.png';
 			imgPath.src = 'Dirt.png';
+			imgCrate.src = 'Crate.png';
+			imgGem.src = 'Gem.png';
+			imgGem2.src = 'Gem2.png';
+			imgGem3.src = 'Gem3.png';
+
+			imgLava.src = 'Lava.jpg';
 
 			player.x = 0;
 			player.y = map.tileWidth*5;
@@ -343,8 +410,7 @@
 				}
 			}
 
-			//lavaWall
-			lava.drawWall();
+			//draw obstacles
 			
 			for(var i = 0; i<obstacles.length; i++)
 			{
@@ -360,7 +426,7 @@
 					animationFrame();
 				
 					ctx.scale(-1,1);
-					ctx.drawImage(img, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, -(width/2) - (player.width/2), player.y, player.width, player.height);	
+					ctx.drawImage(playerSprite, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, -(width/2) - (player.width/2), player.y, player.width, player.height);	
 					ctx.scale(-1,1);
 					console.log(flipped);
 						
@@ -368,7 +434,7 @@
 				else
 				{
 					ctx.scale(-1,1);
-					ctx.drawImage(img, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, -(width/2) - (player.width/2), player.y, player.width, player.height);
+					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, -(width/2) - (player.width/2), player.y, player.width, player.height);
 					ctx.scale(-1,1);
 				}
 			}
@@ -378,15 +444,18 @@
 				{
 					animationFrame();
 				
-					ctx.drawImage(img, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, (width/2)-(player.width/2), player.y, player.width, player.height);	
+					ctx.drawImage(playerSprite, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, (width/2)-(player.width/2), player.y, player.width, player.height);	
 					console.log(flipped);
 						
 				} 
 				else
 				{
-					ctx.drawImage(img, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, (width/2)-(player.width/2), player.y, player.width, player.height);
+					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, (width/2)-(player.width/2), player.y, player.width, player.height);
 				}
 			}
+
+			//lavaWall
+			lava.drawWall();
 
 			ctx.fillRect(xcol*40,ycol*40, 10, 10);
 
