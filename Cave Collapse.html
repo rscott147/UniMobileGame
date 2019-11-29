@@ -39,6 +39,68 @@
 		var imgWall = new Image();
 		var imgPath = new Image();
 		
+		var obstacles = new Array();
+
+		//image class
+		class StaticImage
+		{
+			constructor(xpos, ypos, width, height)
+			{
+				this.m_xpos = xpos;
+				this.m_ypos = ypos;
+				this.m_width = width;
+				this.m_height = height;
+			}
+
+			
+		}
+
+		class Obstacle extends StaticImage
+		{
+			constructor(xpos, ypos, width, height)
+			{
+				super(xpos, ypos, width, height)
+			}
+
+			move(xpos)
+			{
+				this.m_xpos -= xpos;
+			}
+
+			draw()
+			{
+				ctx.drawImage(imgWall, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+			}
+		}
+
+		function generateObstales(xpos, list)
+		{
+			var m_xpos = xpos;
+			
+			for(var j = 0; j<14; j++)
+			{
+				for(var i = 0; i<(map.mapHeight-2); i++)
+				{
+					//random number between 1 and 100
+					var rng = Math.floor((Math.random() * 100) + 1);
+					
+					if(rng >= 50)
+					{
+						var tile = map.getTile(m_xpos, i+1);
+						switch(tile)
+						{
+							case 1:
+								list.push(new Obstacle(m_xpos*40, (i+1)*40, 40, 40))
+								break;
+							default:
+								break;
+						}
+					}
+				}
+				m_xpos++
+			}
+		}
+
 		//map variables
 		var map = 
 		{
@@ -119,7 +181,8 @@
 		};
 
 		//creates new function on load that runs the update function?
-		window.addEventListener("load", function () {
+		window.addEventListener("load", function () 
+		{
 			start();
 			update();
 		});
@@ -136,6 +199,8 @@
 
 			player.x = 0;
 			player.y = map.tileWidth*5;
+
+			generateObstales(13, obstacles);
 		}
 		
 		
@@ -149,6 +214,7 @@
 			else if(player.x > 560)
 			{
 				player.x = 0;
+				generateObstales(13, obstacles);
 			}
 			//console.log(player.x);
 
@@ -250,6 +316,11 @@
 
 			//update lava Wall
 			lava.moveWal(player.velX);
+
+			for(var i = 0; i<obstacles.length; i++)
+			{
+				obstacles[i].move(player.velX);				
+			}
 			
 			ctx.clearRect(0, 0, width, height);
 			
@@ -275,6 +346,12 @@
 			//lavaWall
 			lava.drawWall();
 			
+			for(var i = 0; i<obstacles.length; i++)
+			{
+				obstacles[i].draw();
+				
+			}
+
 			//Player Sprite
 			if(flipped)
 			{
