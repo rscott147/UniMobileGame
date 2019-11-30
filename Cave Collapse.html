@@ -33,7 +33,10 @@
 		var frameTimeMax = 0.017;	
 		var spriteWidth = 74;
 		var spriteHeight = 86;
+
+		//player variables
 		var playerSprite = new Image();
+		var imgBomb = new Image();
 		
 		//tile variables
 		var imgWall = new Image();
@@ -48,6 +51,8 @@
 		var imgLava = new Image();
 		
 		var obstacles = new Array();
+		var bombs = new Array();
+		var explosion = new Array();
 
 		//image class
 		class StaticImage
@@ -93,6 +98,51 @@
 				{
 					ctx.drawImage(imgGem3, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
 				}
+			}
+		}
+
+		class TimedObject extends StaticImage
+		{
+			constructor(xpos, ypos, width, height, timer, maxTimer)
+			{
+				super(xpos, ypos, width, height)
+				this.m_timer = timer;
+				this.m_maxTime = maxTimer;
+
+				this.m_xplode = false;
+			}
+
+			Timer()
+			{
+				this.m_timer++;
+
+				if(this.m_timer >= this.m_maxTime)
+				{
+					this.m_explode = true;
+				}
+			}
+
+			drawBomb()
+			{
+				ctx.drawImage(imgBomb, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+			}
+		}
+
+		function bombManager(xpos, list)
+		{
+			var m_list = list;
+
+			for(var i = 0; i < m_list.length; i++)
+			{
+				m_list[i].move(xpos);
+				m_list[i].Timer();
+
+				//console.log(m_list[i]);
+
+				if(m_list[i].m_explode)
+				{
+					m_list.splice(i, 1);
+				}			
 			}
 		}
 
@@ -193,24 +243,18 @@
 			}
 		};
 
-		class lavaWall 
+		class lavaWall extends TimedObject
 		{
-			constructor(xpos, ypos, width, height, timer)
+			constructor(xpos, ypos, width, height, timer, maxTimer)
 			{	
-				this.m_xpos = xpos;
-				this.m_ypos = ypos;
-				this.m_width = width;
-				this.m_height = height;
-
-				this.m_timer = timer;
-				this.moveTime = 400;
+				super(xpos, ypos, width, height, timer, maxTimer)
 			}
 
 			moveWal(xpos)
 			{
 				this.m_timer++;
 
-				if(this.m_timer >= this.moveTime)
+				if(this.m_timer >= this.m_maxTime)
 				{
 					this.m_xpos += map.tileWidth;
 					this.m_timer = 0;
@@ -226,14 +270,14 @@
 			}
 		}
 
-		var lava = new lavaWall(-width+40, map.tileHeight, width, height-80, 0);
+		var lava = new lavaWall(-width+40, map.tileHeight, width, height-80, 0, 400);
 
 		var isKeyPressed = false;
 		var flipped = false;
 
 		var player = 
 		{
-			x: map.tileWidth*6,
+			x: 0,
 			y: map.tileHeight*6,
 			width: 30,
 			height: 30,
@@ -254,6 +298,7 @@
 			canvas.height = height;
 			
 			playerSprite.src = 'braidSpriteSheet.png';
+			imgBomb.src = 'Bomb.png';
 			
 			imgWall.src = 'Wall.png';
 			imgPath.src = 'Dirt.png';
@@ -290,12 +335,20 @@
 			//console.log(xcol);
 			//console.log(ycol);
 			
+			if (keys[32]) 
+			{
+				xcol = Math.floor((player.x+(player.width/2))/map.tileWidth);
+				ycol = Math.floor((player.y+(player.height/2))/map.tileHeight);
+				
+				bombs.push(new TimedObject((xcol*40-player.x)+(6*40), ycol*40, 40, 40, 0, 240));
+				
+			}
 			
 			if (keys[40]) 
 			{
 				xcol = Math.floor((player.x+(player.width/2))/map.tileWidth);
 				ycol = Math.floor((player.y+(player.height))/map.tileHeight);
-				// top arrow
+				// down arrow
 				var tile = map.getTile(xcol,ycol);
 				console.log(tile);
 
@@ -311,9 +364,9 @@
 			}
 			else if (keys[38]) 
 			{
-				// down arrow
+				// top arrow
 				xcol = Math.floor((player.x+(player.width/2))/map.tileWidth);
-				ycol = Math.floor((player.y-(player.height/4))/map.tileHeight);
+				ycol = Math.floor((player.y)/map.tileHeight);
 
 				var tile = map.getTile(xcol,ycol);
 				console.log(tile);
@@ -354,7 +407,7 @@
 			else if (keys[37]) 
 			{
 			    //left arrow
-				xcol = Math.floor(((player.x-(player.width/2))/map.tileWidth));
+				xcol = Math.floor(((player.x)/map.tileWidth));
 				ycol = Math.floor((player.y+(player.height/2))/map.tileHeight);
 				//console.log(xcol);
 
@@ -380,6 +433,8 @@
 			player.velY *= speed;
 			player.x += player.velX;
 			player.y += player.velY;
+
+			bombManager(player.velX, bombs);
 
 			//update lava Wall
 			lava.moveWal(player.velX);
@@ -415,7 +470,12 @@
 			for(var i = 0; i<obstacles.length; i++)
 			{
 				obstacles[i].draw();
-				
+			}
+			
+
+			for(var i = 0; i<bombs.length; i++)
+			{
+				bombs[i].drawBomb();
 			}
 
 			//Player Sprite
@@ -457,7 +517,10 @@
 			//lavaWall
 			lava.drawWall();
 
-			ctx.fillRect(xcol*40,ycol*40, 10, 10);
+			//xcol = Math.floor((player.x)/map.tileWidth);
+			//ycol = Math.floor((player.y)/map.tileHeight);
+			console.log(player.x);
+			ctx.fillRect((xcol*40-player.x)+(6*40),ycol*40, 10, 10);
 
 			requestAnimationFrame(update);
 		}
@@ -494,12 +557,11 @@
 					  frame = 0;
 					  frameX = 0;
 					  frameY = 0;
-					}
-				
-			}
-		
+					}				
+			}	
 		}
 
+		
 		
 		document.body.addEventListener("keydown", function (e) 
 		{
