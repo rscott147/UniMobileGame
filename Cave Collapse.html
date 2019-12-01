@@ -196,7 +196,7 @@
 			{
 				if(topcheck === false)
 				{
-					var xcol = Math.floor((m_bomb.m_xpos)/map.tileWidth);
+					var xcol = (Math.floor((m_bomb.m_xpos+20)/map.tileWidth));
 					var ycol = Math.floor((m_bomb.m_ypos - ((i+1)*40))/map.tileHeight);
 
 					console.log(xcol);
@@ -218,7 +218,7 @@
 				}
 				if(botcheck === false)
 				{
-					var xcol = Math.floor((m_bomb.m_xpos)/map.tileWidth);
+					var xcol = (Math.floor((m_bomb.m_xpos+20)/map.tileWidth));
 					var ycol = Math.floor((m_bomb.m_ypos + ((i+1)*40))/map.tileHeight);
 
 					var tile = map.getTile(xcol, ycol);
@@ -334,6 +334,7 @@
 			}
 		}
 
+		//function for collision detection
 		function checkCollision(obj1, obj2)
 		{
 			var object1 = obj1;
@@ -418,14 +419,52 @@
 
 		var player = 
 		{
-			x: 0,
-			y: map.tileHeight*6,
-			width: 30,
-			height: 30,
+			m_xpos: 0,
+			m_ypos: map.tileHeight*6,
+			m_width: 30,
+			m_height: 30,
 			velX: 0,
-			velY: 0
+			velY: 0,
 		};
 
+		var playerCol = 
+		{
+			m_xpos: player.m_xpos +(6*40),
+			m_ypos: player.m_ypos - 40,
+			m_width: 10,
+			m_height: 10,
+		};
+
+		function updateCol(colx, coly, direction)
+			{
+				var xcol = colx;
+				var ycol = coly;
+				var dir = direction;
+
+				if(dir === "up")
+				{
+					playerCol.m_xpos = xcol + (6*40);
+					playerCol.m_ypos = ycol*40;
+				}
+				if(dir === "down")
+				{
+					playerCol.m_xpos = xcol + (6*40);
+					playerCol.m_ypos = ycol*40;
+				}
+				if(dir === "left")
+				{
+					playerCol.m_xpos = (xcol + (6*40))-15;
+					playerCol.m_ypos = ycol*40;
+				}
+				if(dir === "right")
+				{
+					playerCol.m_xpos = (xcol + (6*40))+10;
+					playerCol.m_ypos = ycol*40;
+				}
+				
+				console.log(playerCol.m_ypos);
+				//ctx.fillRect(m_xpos, m_ypos, m_width, m_height);
+			}
 		//creates new function on load that runs the update function?
 		window.addEventListener("load", function () 
 		{
@@ -452,8 +491,8 @@
 
 			imgLava.src = 'Lava.jpg';
 
-			player.x = 0;
-			player.y = map.tileWidth*5;
+			player.m_xpos = 0;
+			player.m_ypos = map.tileWidth*5;
 
 			generateObstales(13, obstacles);
 		}
@@ -462,111 +501,183 @@
 		function update() 
 		{
 		
-			if(player.x < 0)
+			if(player.m_xpos < 0)
 			{
-				player.x = 560;
+				player.m_xpos = 560;
 			}
-			else if(player.x > 560)
+			else if(player.m_xpos > 560)
 			{
-				player.x = 0;
+				player.m_xpos = 0;
 				generateObstales(13, obstacles);
 			}
 			//console.log(player.x);
 
-			var xcol = Math.floor((player.x)/map.tileWidth);
-			var ycol = Math.floor((player.y)/map.tileHeight);
+			var xcol = Math.floor((player.m_xpos)/map.tileWidth);
+			var ycol = Math.floor((player.m_ypos)/map.tileHeight);
 			//console.log(xcol);
 			//console.log(ycol);
 			
 			if (keys[32]) 
 			{
-				xcol = Math.floor((player.x+(player.width/2))/map.tileWidth);
-				ycol = Math.floor((player.y+(player.height/2))/map.tileHeight);
+				xcol = Math.floor((player.m_xpos+(player.m_width/2))/map.tileWidth);
+				ycol = Math.floor((player.m_ypos+(player.m_height/2))/map.tileHeight);
 				
-				bombs.push(new TimedObject((xcol*40-player.x)+(6*40), ycol*40, 40, 40, 0, 240));
+				bombs.push(new TimedObject((xcol*40-player.m_xpos)+(6*40), ycol*40, 40, 40, 0, 240));
 				
 			}
 			
 			if (keys[40]) 
 			{
-				xcol = Math.floor((player.x+(player.width/2))/map.tileWidth);
-				ycol = Math.floor((player.y+(player.height))/map.tileHeight);
-				// down arrow
-				var tile = map.getTile(xcol,ycol);
-				//console.log(tile);
+				var colCheck = false;
+				xcol = Math.floor((player.m_xpos+(player.m_width/2))/map.tileWidth);
+				ycol = Math.floor((player.m_ypos+(player.m_height))/map.tileHeight);
 
-				switch(tile)
+
+				var direction = "down";
+				updateCol(xcol, ycol, direction);
+
+				for(var i = 0; i<obstacles.length; i++)
 				{
-					case 1:
-						player.velY++;
-						break;
-					default:
-						break;
+					if(checkCollision(playerCol, obstacles[i]))
+					{
+						colCheck = true;
+					}
+				}
+
+				if(!colCheck)
+				{
+					
+				
+					// down arrow
+					var tile = map.getTile(xcol,ycol);
+					//console.log(tile);
+
+					switch(tile)
+					{
+						case 1:
+							player.velY++;
+							break;
+						default:
+							break;
+					}
 				}
 					
 			}
 			else if (keys[38]) 
 			{
-				// top arrow
-				xcol = Math.floor((player.x+(player.width/2))/map.tileWidth);
-				ycol = Math.floor((player.y)/map.tileHeight);
+				var colCheck = false;
+				xcol = Math.floor((player.m_xpos+(player.m_width/2))/map.tileWidth);
+				ycol = Math.floor((player.m_ypos)/map.tileHeight);
 
-				var tile = map.getTile(xcol,ycol);
-				//console.log(tile);
+				var direction = "up";
+				updateCol(xcol, ycol, direction);
 
-				switch(tile)
+				for(var i = 0; i<obstacles.length; i++)
 				{
-					case 1:
-						player.velY--;
-						break;
-					default:
-						break;
+					if(checkCollision(playerCol, obstacles[i]))
+					{
+						colCheck = true;
+					}
+				}
+
+				if(!colCheck)
+				{
+					// top arrow
+					
+
+					var tile = map.getTile(xcol,ycol);
+					//console.log(tile);
+
+					switch(tile)
+					{
+						case 1:
+							player.velY--;
+							break;
+						default:
+							break;
+					}
 				}
 					
 			}
 			else if (keys[39]) 
 			{
-				//right arrow
-				xcol = Math.floor(((player.x+(player.width))/map.tileWidth));
-				ycol = Math.floor((player.y+(player.height/2))/map.tileHeight);
+				var colCheck = false;
+				xcol = Math.floor(((player.m_xpos+(player.m_width))/map.tileWidth));
+				ycol = Math.floor((player.m_ypos+(player.m_height/2))/map.tileHeight);
 
-				if(xcol < 0)
-					xcol = 0;
+				var direction = "right";
+				updateCol(xcol, ycol, direction);
 
-				var tile = map.getTile(xcol,ycol);
-				//console.log(tile);
-
-				switch(tile)
+				for(var i = 0; i<obstacles.length; i++)
 				{
-					case 1:
-						player.velX++;
-						break;
-					default:
-						break;
+					if(checkCollision(playerCol, obstacles[i]))
+					{
+						colCheck = true;
+					}
 				}
+
+				if(!colCheck)
+				{
+					//right arrow
+					
+
+					if(xcol < 0)
+						xcol = 0;
+
+					var tile = map.getTile(xcol,ycol);
+					//console.log(tile);
+
+					switch(tile)
+					{
+						case 1:
+							player.velX++;
+							break;
+						default:
+							break;
+					}
+				}
+				
 					
 				flipped = false;
 			}
 			else if (keys[37]) 
 			{
-			    //left arrow
-				xcol = Math.floor(((player.x)/map.tileWidth));
-				ycol = Math.floor((player.y+(player.height/2))/map.tileHeight);
-				//console.log(xcol);
+				var colCheck = false;
+				xcol = Math.floor(((player.m_xpos)/map.tileWidth));
+				ycol = Math.floor((player.m_ypos+(player.m_height/2))/map.tileHeight);
 
-				if(xcol < 0)
-					xcol = 0;
+				var direction = "left";
+				updateCol(xcol, ycol, direction);
 
-				var tile = map.getTile(xcol,ycol);
-				//console.log(tile);
-
-				switch(tile)
+				for(var i = 0; i<obstacles.length; i++)
 				{
-					case 1:
-						player.velX--;
-						break;
-					default:
-						break;
+					if(checkCollision(playerCol, obstacles[i]))
+					{
+						colCheck = true;
+					}
+				}
+
+				if(!colCheck)
+				{
+					//left arrow
+					xcol = Math.floor(((player.m_xpos)/map.tileWidth));
+					ycol = Math.floor((player.m_ypos+(player.m_height/2))/map.tileHeight);
+					//console.log(xcol);
+
+					if(xcol < 0)
+						xcol = 0;
+
+					var tile = map.getTile(xcol,ycol);
+					//console.log(tile);
+
+					switch(tile)
+					{
+						case 1:
+							player.velX--;
+							break;
+						default:
+							break;
+					}
 				}
 				flipped = true;
 			}
@@ -574,8 +685,8 @@
 
 			player.velX *= speed;
 			player.velY *= speed;
-			player.x += player.velX;
-			player.y += player.velY;
+			player.m_xpos += player.velX;
+			player.m_ypos += player.velY;
 
 			bombManager(player.velX, bombs, explosion);
 
@@ -604,16 +715,17 @@
 					switch(tile)
 					{
 						case 0:
-							ctx.drawImage(imgWall, -(player.x)+ (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
+							ctx.drawImage(imgWall, -(player.m_xpos)+ (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
 							break;
 						default:
-							ctx.drawImage(imgPath, -(player.x)+ (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
+							ctx.drawImage(imgPath, -(player.m_xpos)+ (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
 							break;
 					}
 				}
 			}
 
 			//lavaWall
+			lava.moveWal(player.velX);
 			lava.drawWall();
 
 			//draw obstacles
@@ -644,7 +756,7 @@
 					animationFrame();
 				
 					ctx.scale(-1,1);
-					ctx.drawImage(playerSprite, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, -(width/2) - (player.width/2), player.y, player.width, player.height);	
+					ctx.drawImage(playerSprite, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, -(width/2) - (player.m_width/2), player.m_ypos, player.m_width, player.m_height);	
 					ctx.scale(-1,1);
 					console.log(flipped);
 						
@@ -652,7 +764,7 @@
 				else
 				{
 					ctx.scale(-1,1);
-					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, -(width/2) - (player.width/2), player.y, player.width, player.height);
+					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, -(width/2) - (player.m_width/2), player.m_ypos, player.m_width, player.m_height);
 					ctx.scale(-1,1);
 				}
 			}
@@ -662,13 +774,13 @@
 				{
 					animationFrame();
 				
-					ctx.drawImage(playerSprite, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, (width/2)-(player.width/2), player.y, player.width, player.height);	
+					ctx.drawImage(playerSprite, spriteWidth*frameX, spriteHeight*frameY, spriteWidth, spriteHeight, (width/2)-(player.m_width/2), player.m_ypos, player.m_width, player.m_height);	
 					console.log(flipped);
 						
 				} 
 				else
 				{
-					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, (width/2)-(player.width/2), player.y, player.width, player.height);
+					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, (width/2)-(player.m_width/2), player.m_ypos, player.m_width, player.m_height);
 				}
 			}
 
@@ -678,7 +790,8 @@
 			//xcol = Math.floor((player.x)/map.tileWidth);
 			//ycol = Math.floor((player.y)/map.tileHeight);
 			//console.log(player.x);
-			ctx.fillRect((xcol*40-player.x)+(6*40),ycol*40, 10, 10);
+			//ctx.fillRect((xcol*40-player.m_xpos)+(6*40),ycol*40, 10, 10);
+			ctx.fillRect(playerCol.m_xpos, playerCol.m_ypos, playerCol.m_width, playerCol.m_height);
 
 			requestAnimationFrame(update);
 		}
