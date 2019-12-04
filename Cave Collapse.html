@@ -98,7 +98,7 @@
 			{
 				if(this.m_type === 1)
 				{
-					ctx.drawImage(imgCrate, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+					ctx.drawImage(imgRock, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
 				}
 				else if(this.m_type === 2)
 				{
@@ -281,7 +281,7 @@
 					//random number between 1 and 100
 					var rng = Math.floor((Math.random() * 100) + 1);
 					
-					if(rng >= 40 && rng < 85)
+					if(rng >= 40 && rng < 88)
 					{
 						var tile = map.getTile(m_xpos, i+1);
 						switch(tile)
@@ -293,7 +293,7 @@
 								break;
 						}
 					}
-					else if(rng >= 85 && rng < 92)
+					else if(rng >= 88 && rng < 94)
 					{
 						var tile = map.getTile(m_xpos, i+1);
 						switch(tile)
@@ -305,7 +305,7 @@
 								break;
 						}
 					}
-					else if(rng >= 92 && rng < 99)
+					else if(rng >= 94 && rng < 99)
 					{
 						var tile = map.getTile(m_xpos, i+1);
 						switch(tile)
@@ -378,11 +378,11 @@
 				return this.tileMap[y * map.mapWidth + x]
 			},
 
-			isWalkable: function(x, y)
+			/*isWalkable: function(x, y)
 			{
 				return this.tileMap[y + x]
 				console.log(tileMap[y + x]);
-			}
+			}*/
 		};
 
 		class lavaWall extends TimedObject
@@ -406,6 +406,16 @@
 				this.m_xpos -= xpos;
 			}
 
+			reset()
+			{
+				this.m_xpos = -width+40;
+				this.m_ypos = map.tileHeight;
+				this.m_width = width;
+				this.m_height = height - 80;
+
+				this.m_timer = 0;
+			}
+
 			drawWall()
 			{
 				ctx.drawImage(imgLava, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
@@ -425,6 +435,15 @@
 			m_height: 30,
 			velX: 0,
 			velY: 0,
+
+			reset: function()
+			{
+				this.m_xpos = 0;
+				this.m_ypos = map.tileHeight*5;
+
+				this.velX = 0;
+				this.velY = 0;
+			}
 		};
 
 		var playerCol = 
@@ -465,6 +484,32 @@
 				console.log(playerCol.m_ypos);
 				//ctx.fillRect(m_xpos, m_ypos, m_width, m_height);
 			}
+
+		function Reset()
+		{
+			//empties bomb, explosion and obstacle arrays and regenerates the obstacles
+			for(var i = 0; i< bombs.length; i++)
+			{
+				bombs.splice(i,1);
+				i--;
+			}
+			for(var i = 0; i<explosion.length; i++)
+			{
+				explosion.splice(i,1);
+				i--;
+			}
+			for(var i = 0; i<obstacles.length; i++)
+			{
+				obstacles.splice(i,1);
+				i--;
+			}
+
+			player.reset();
+			lava.reset();
+			flipped = false;
+			generateObstales(13, obstacles);
+			console.log(player.m_xpos);
+		}
 		//creates new function on load that runs the update function?
 		window.addEventListener("load", function () 
 		{
@@ -484,12 +529,12 @@
 			
 			imgWall.src = 'Wall.png';
 			imgPath.src = 'Dirt.png';
-			imgCrate.src = 'Crate.png';
+			imgRock.src = 'Rock.png';
 			imgGem.src = 'Gem.png';
 			imgGem2.src = 'Gem2.png';
 			imgGem3.src = 'Gem3.png';
 
-			imgLava.src = 'Lava.jpg';
+			imgLava.src = 'Lava.png';
 
 			player.m_xpos = 0;
 			player.m_ypos = map.tileWidth*5;
@@ -681,12 +726,24 @@
 				}
 				flipped = true;
 			}
-
-
+			
 			player.velX *= speed;
 			player.velY *= speed;
 			player.m_xpos += player.velX;
 			player.m_ypos += player.velY;
+
+			for(var i = 0; i<explosion.length; i++)
+			{
+				if(checkCollision(playerCol, explosion[i]))
+				{
+					Reset();
+				}
+			}
+
+			if(checkCollision(playerCol, lava))
+			{
+				Reset();
+			}
 
 			bombManager(player.velX, bombs, explosion);
 
@@ -715,14 +772,16 @@
 					switch(tile)
 					{
 						case 0:
-							ctx.drawImage(imgWall, -(player.m_xpos)+ (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
+							ctx.drawImage(imgWall, -(player.m_xpos) + (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
 							break;
 						default:
-							ctx.drawImage(imgPath, -(player.m_xpos)+ (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
+							ctx.drawImage(imgPath, -(player.m_xpos) + (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
 							break;
 					}
 				}
 			}
+			
+			
 
 			//lavaWall
 			lava.moveWal(player.velX);
@@ -749,7 +808,7 @@
 			}
 
 			//Player Sprite
-			if(flipped)
+			/*if(flipped)
 			{
 				if(isKeyPressed)
 				{
@@ -782,10 +841,10 @@
 				{
 					ctx.drawImage(playerSprite, spriteWidth*6, spriteHeight*2, spriteWidth, spriteHeight, (width/2)-(player.m_width/2), player.m_ypos, player.m_width, player.m_height);
 				}
-			}
+			}*/
 
 			//lavaWall
-			lava.drawWall();
+			//lava.drawWall();
 
 			//xcol = Math.floor((player.x)/map.tileWidth);
 			//ycol = Math.floor((player.y)/map.tileHeight);
