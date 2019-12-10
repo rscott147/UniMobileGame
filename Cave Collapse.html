@@ -2,9 +2,112 @@
 <html>
 <head>
 <title>Page Title</title>
+
+<style>
+	#menuContainer
+	{
+		position: absolute;
+		width: 520;
+		height: 440;
+	}
+
+	#menuContainer #playButton
+	{
+	  position: absolute;
+	  top: 50%;
+	  left: 50%;
+	  transform: translate(-50%, -50%);
+	  -ms-transform: translate(-50%, -50%);
+	  background-color: #555;
+	  color: white;
+	  font-size: 16px;
+	  padding: 12px 24px;
+	  border: none;
+	  cursor: pointer;
+	  border-radius: 5px;
+	  text-align: center;
+	}
+	#menuContainer #tutorialButton
+	{
+	  position: absolute;
+	  top: 62%;
+	  left: 50%;
+	  transform: translate(-50%, -50%);
+	  -ms-transform: translate(-50%, -50%);
+	  background-color: #555;
+	  color: white;
+	  font-size: 16px;
+	  padding: 12px 24px;
+	  border: none;
+	  cursor: pointer;
+	  border-radius: 5px;
+	  text-align: center;
+	}
+	#menuContainer #exitButton
+	{
+	  position: absolute;
+	  top: 74%;
+	  left: 50%;
+	  transform: translate(-50%, -50%);
+	  -ms-transform: translate(-50%, -50%);
+	  background-color: #555;
+	  color: white;
+	  font-size: 16px;
+	  padding: 12px 24px;
+	  border: none;
+	  cursor: pointer;
+	  border-radius: 5px;
+	  text-align: center;
+	}
+
+	#menuContainer #playAgainButton
+	{
+	  position: absolute;
+	  top: 70%;
+	  left: 30%;
+	  transform: translate(-50%, -50%);
+	  -ms-transform: translate(-50%, -50%);
+	  background-color: #555;
+	  color: white;
+	  font-size: 16px;
+	  padding: 12px 24px;
+	  border: none;
+	  cursor: pointer;
+	  border-radius: 5px;
+	  text-align: center;
+	}
+
+	#menuContainer #returnToMainButton
+	{
+	  position: absolute;
+	  top: 70%;
+	  left: 70%;
+	  transform: translate(-50%, -50%);
+	  -ms-transform: translate(-50%, -50%);
+	  background-color: #555;
+	  color: white;
+	  font-size: 16px;
+	  padding: 12px 24px;
+	  border: none;
+	  cursor: pointer;
+	  border-radius: 5px;
+	  text-align: center;
+	}
+
+</style>
 </head>
 <body>
 	<canvas id="canvasForTheGame"></canvas>
+	<div id = "menuContainer">
+		<img id = "background" src = "MenuBackground.png">
+		<button class = "Button" id = "playButton" onclick="Reset()" style = "Display: initial;">Play</button>
+		<button class = "Button" id = "tutorialButton" onclick="" style = "Display: initial;">Tutorial</button>
+		<button class = "Button" id = "exitButton" onclick="" style = "Display: initial;">Exit</button>
+
+		<button class = "Button" id = "playAgainButton" onclick="Reset()" style = "Display: none;">Play Again!</button>
+		<button class = "Button" id = "returnToMainButton" onclick="ReturnMain()" style = "Display: none;">Main Menu</button>
+	</div>
+
 	<script>
 		//calls WebAPI for animaton loop, dependant on the browser being used.
 		var requestAnimationFrame = window.requestAnimationFrame || 
@@ -21,24 +124,25 @@
 		
 		var keys = [];
 
-		var speed = 0.65;
-		
-		var startTimeMS = 0;
-		var frameX = 0;
-		var frameXMax = 6;
-		var frameY = 0;
-		var frameYMax = 3;
-		var frame = 0;
-		var frameMax = 26;
-		var frameTimer = 0.05;
-		var frameTimeMax = 0.017;	
-		var spriteWidth = 74;
-		var spriteHeight = 86;
+		var gameState = "Main";
+
+		var backgroundImg = document.getElementById("background");
+
+		var playBtn = document.getElementById("playButton");
+		var tutBtn = document.getElementById("tutorialButton");
+		var exitBtn = document.getElementById("exitButton");
+
+		var playAgainBtn = document.getElementById("playAgainButton");
+		var returnToMnBtn = document.getElementById("returnToMainButton");
+
+		var mainMenuImg =  new Image();
+		var gameOverImg = new Image();
 
 		//player variables
 		var playerSprite = new Image();
 		var imgBomb = new Image();
 		var imgExplode = new Image();
+		var testImg = new Image();
 		
 		//tile variables
 		var imgWall = new Image();
@@ -124,7 +228,7 @@
 				this.m_timer = timer;
 				this.m_maxTime = maxTimer;
 
-				this.m_xplode = false;
+				this.m_explode = false;
 			}
 
 			Timer()
@@ -140,13 +244,70 @@
 			drawBomb()
 			{
 				ctx.drawImage(imgBomb, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
-			}
+            }
 
-			drawExplode()
+            drawExplode()
 			{
 				ctx.drawImage(imgExplode, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
 			}
-		}
+        }
+
+        class Explosion extends TimedObject
+        {
+            constructor(xpos, ypos, width, height, timer, maxTimer, xFrames, yFrames, maxFrame)
+			{
+				super(xpos, ypos, width, height, timer, maxTimer)
+
+				this.m_startTime = 0;
+				this.m_frameX = 0;
+				this.m_frameXMax = xFrames;
+				this.m_frameY = 0;
+				this.m_frameYMax = yFrames;
+				this.m_frame = 0;
+				this.m_frameMax = maxFrame;
+
+				this.m_frameTimer = timer;
+				this.m_frameTimeMax = maxTimer;
+
+				this.m_spriteWidth = 128;
+				this.m_spriteHeight = 128;
+				
+            }
+
+            Timer()
+            {
+                var m_elapsedTime = (Date.now() - this.m_startTime)/1000;
+				this.m_startTime = Date.now();
+
+				//only update frames when timer is below 0
+				this.m_frameTimer = this.m_frameTimer - m_elapsedTime;
+				if(this.m_frameTimer <= 0)
+				{
+					this.m_frameTimer = this.m_frameTimeMax;
+
+						this.m_frameX++;
+
+						if(this.m_frameX >= this.m_frameXMax)
+						{
+                            this.m_frameX = 0;
+                            this.m_frameY++;
+						}
+						
+					this.m_frame++;
+					//reset frames to 0 in event that there are empty spaces on sprite sheet
+					if(this.m_frame > this.m_frameMax)
+					{
+						this.m_explode = true;
+					}
+				}
+				console.log(this.m_frame);
+            }
+
+            drawExplode()
+			{
+				ctx.drawImage(testImg, this.m_spriteWidth*this.m_frameX, this.m_spriteHeight*this.m_frameY, this.m_spriteWidth, this.m_spriteHeight, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
+			}
+        }
 
 		function bombManager(xpos, bomb, explode)
 		{
@@ -171,6 +332,7 @@
 			{
 				m_detonate[i].move(xpos);
 				m_detonate[i].Timer();
+				//m_detonate[i].updateExplode();
 
 				//console.log(m_bomb[i]);
 
@@ -191,7 +353,7 @@
 			var leftcheck = false;
 			var rightcheck = false;
 
-			m_explosions.push(new TimedObject(m_bomb.m_xpos, m_bomb.m_ypos, 40, 40, 0, 120));
+			m_explosions.push(new Explosion(m_bomb.m_xpos, m_bomb.m_ypos, 40, 40, 0.5, 0.1, 4, 4, 14));
 
 			for(var i = 0; i<2; i++)
 			{
@@ -207,7 +369,7 @@
 					switch(tile)
 					{
 					case 1:
-						m_explosions.push(new TimedObject(m_bomb.m_xpos, m_bomb.m_ypos - ((i+1)*40), 40, 40, 0, 120));
+						m_explosions.push(new Explosion(m_bomb.m_xpos, m_bomb.m_ypos  - ((i+1)*40), 40, 40, 0.5, 0.1, 4, 4, 14));
 						break;
 					default:
 						topcheck = true;
@@ -224,7 +386,7 @@
 					switch(tile)
 					{
 					case 1:
-						m_explosions.push(new TimedObject(m_bomb.m_xpos, m_bomb.m_ypos + ((i+1)*40), 40, 40, 0, 120));
+						m_explosions.push(new Explosion(m_bomb.m_xpos, m_bomb.m_ypos  + ((i+1)*40), 40, 40, 0.5, 0.1, 4, 4, 14));
 						break;
 					default:
 						botcheck = true;
@@ -243,7 +405,7 @@
 					switch(tile)
 					{
 					case 1:
-						m_explosions.push(new TimedObject(m_bomb.m_xpos - ((i+1)*40), m_bomb.m_ypos, 40, 40, 0, 120));
+						m_explosions.push(new Explosion(m_bomb.m_xpos   - ((i+1)*40), m_bomb.m_ypos, 40, 40, 0.5, 0.1, 4, 4, 14));
 						break;
 					default:
 						leftcheck = true;
@@ -260,7 +422,7 @@
 					switch(tile)
 					{
 					case 1:
-						m_explosions.push(new TimedObject(m_bomb.m_xpos + ((i+1)*40), m_bomb.m_ypos, 40, 40, 0, 120));
+						m_explosions.push(new Explosion(m_bomb.m_xpos + ((i+1)*40), m_bomb.m_ypos, 40, 40, 0.5, 0.1, 4, 4, 14));
 						break;
 					default:
 						rightcheck = true;
@@ -425,7 +587,6 @@
 		var lava = new lavaWall(-width+40, map.tileHeight, width, height-80, 0, 300);
 
 		var isKeyPressed = false;
-		var flipped = false;
 
 		class Player extends StaticImage
 		{
@@ -728,6 +889,17 @@
 
 		function Reset()
 		{
+			playBtn.style.display = "none";
+			tutBtn.style.display = "none";
+			exitBtn.style.display = "none";
+
+			canvas.style.display = "initial";
+			backgroundImg.style.display = "none";
+
+			playAgainBtn.style.display = "none";
+			returnToMnBtn.style.display = "none";
+
+			gameState = "Game";
 			//empties bomb, explosion and obstacle arrays and regenerates the obstacles
 			for(var i = 0; i< bombs.length; i++)
 			{
@@ -747,10 +919,36 @@
 
 			player.reset();
 			lava.reset();
-			flipped = false;
 			generateObstales(13, obstacles);
-			console.log(player.m_xpos);
+        }
+
+		function ReturnMain()
+		{
+			gameState = "Main";
+
+			backgroundImg.style.display = "initial";
+			backgroundImg.src = mainMenuImg.src;
+			playAgainBtn.style.display = "none";
+			returnToMnBtn.style.display = "none";
+
+			playBtn.style.display = "initial";
+			tutBtn.style.display = "initial";
+			exitBtn.style.display = "initial";
 		}
+
+		function GameOver()
+		{
+			gameState = "GameOver";
+
+			canvas.style.display = "none";
+
+			backgroundImg.style.display = "initial";
+			backgroundImg.src = gameOverImg.src;
+
+			playAgainBtn.style.display = "initial";
+			returnToMnBtn.style.display = "initial";
+		}
+
 		//creates new function on load that runs the update function?
 		window.addEventListener("load", function () 
 		{
@@ -762,10 +960,18 @@
 		{
 			canvas.width = width;
 			canvas.height = height;
+
+			canvas.style.display = "none";
 			
+			mainMenuImg.src = "MenuBackground.png";
+			gameOverImg.src = "GameOverBackground.png";
+
+			backgroundImg.src = mainMenuImg.src;
+
 			playerSprite.src = 'Player.png';
 			imgBomb.src = 'Bomb.png';
 			imgExplode.src = 'Boom.png';
+			testImg.src = "Explosion.png";
 			
 			
 			imgWall.src = 'Wall.png';
@@ -783,85 +989,106 @@
 		
 		function update() 
 		{
-		
-			player.updatePlayer();
-
-			for(var i = 0; i<explosion.length; i++)
+			if(gameState === "Main")
 			{
-				if(checkCollision(player.playerCol, explosion[i]))
-				{
-					Reset();
-				}
+				//ctx.clearRect(0, 0, width, height);
+
+				//ctx.drawImage(mainMenuImg,0,0,width,height);
 			}
-
-			if(checkCollision(player.playerCol, lava))
+			else if(gameState === "Game")
 			{
-				Reset();
-			}
+				player.updatePlayer();
 
-			bombManager(player.m_VelX, bombs, explosion);
-
-			for(var i = 0; i<obstacles.length; i++)
-			{
-				if(obstacles[i].checkExplosive(explosion) || checkCollision(obstacles[i], lava))
+				for(var i = 0; i<explosion.length; i++)
 				{
-					obstacles.splice(i,1);
-					i--;
-				}
-				else
-				{
-					obstacles[i].move(player.m_VelX);	
-				}
-			}
-			
-			ctx.clearRect(0, 0, width, height);
-			
-			//for loop to draw each tile
-			for(var x = 0; x< map.mapWidth; x++)
-			{
-				for(var y = 0; y< map.mapHeight; y++)
-				{
-					var tile = map.getTile(x,y);
-					//console.log(tile);
-					switch(tile)
+					if(checkCollision(player.playerCol, explosion[i]))
 					{
-						case 0:
-							ctx.drawImage(imgWall, -(player.m_xpos) + (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
-							break;
-						default:
-							ctx.drawImage(imgPath, -(player.m_xpos) + (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
-							break;
+						GameOver();
+					}
+
+					for(var j = 0; j<bombs.length; j++)
+					{
+						if(checkCollision(bombs[j], explosion[i]))
+						{
+							bombs[j].m_explode = true;
+						}
 					}
 				}
+
+				if(checkCollision(player.playerCol, lava))
+				{
+					GameOver();
+				}
+
+				bombManager(player.m_VelX, bombs, explosion);
+
+				for(var i = 0; i<obstacles.length; i++)
+				{
+					if(obstacles[i].checkExplosive(explosion) || checkCollision(obstacles[i], lava))
+					{
+						obstacles.splice(i,1);
+						i--;
+					}
+					else
+					{
+						obstacles[i].move(player.m_VelX);	
+					}
+				}
+			
+				ctx.clearRect(0, 0, width, height);
+			
+				//for loop to draw each tile
+				for(var x = 0; x< map.mapWidth; x++)
+				{
+					for(var y = 0; y< map.mapHeight; y++)
+					{
+						var tile = map.getTile(x,y);
+						//console.log(tile);
+						switch(tile)
+						{
+							case 0:
+								ctx.drawImage(imgWall, -(player.m_xpos) + (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
+								break;
+							default:
+								ctx.drawImage(imgPath, -(player.m_xpos) + (x*map.tileWidth), y*map.tileHeight, map.tileWidth, map.tileHeight);
+								break;
+						}
+					}
+				}
+			
+			
+
+				//lavaWall
+				lava.moveWal(player.m_VelX);
+				lava.drawWall();
+
+				//draw obstacles
+			
+				for(var i = 0; i<obstacles.length; i++)
+				{
+					obstacles[i].draw();
+				}
+			
+				for(var i = 0; i<bombs.length; i++)
+				{
+					bombs[i].drawBomb();
+				}
+
+				for(var i = 0; i<explosion.length; i++)
+				{
+					explosion[i].drawExplode();
+				}
+
+
+				player.drawPlayer();
+
+				ctx.fillRect(player.playerCol.m_xpos, player.playerCol.m_ypos, player.playerCol.m_width, player.playerCol.m_height);
 			}
-			
-			
-
-			//lavaWall
-			lava.moveWal(player.m_VelX);
-			lava.drawWall();
-
-			//draw obstacles
-			
-			for(var i = 0; i<obstacles.length; i++)
+			else if(gameState = "GameOver")
 			{
-				obstacles[i].draw();
+				//ctx.clearRect(0, 0, width, height);
+				//ctx.drawImage(gameOverImg,0,0,width,height);
 			}
-			
-			for(var i = 0; i<bombs.length; i++)
-			{
-				bombs[i].drawBomb();
-			}
-
-			for(var i = 0; i<explosion.length; i++)
-			{
-				explosion[i].drawExplode();
-			}
-
-
-			player.drawPlayer();
-
-			ctx.fillRect(player.playerCol.m_xpos, player.playerCol.m_ypos, player.playerCol.m_width, player.playerCol.m_height);
 
 			requestAnimationFrame(update);
 		}
