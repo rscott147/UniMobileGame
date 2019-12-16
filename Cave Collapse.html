@@ -231,7 +231,9 @@
         <button class="Button" id="playAgainButton" onclick="Reset()" style="Display: none;">Play Again!</button>
         <button class="Button" id="returnToMainButton" onclick="ReturnMain()" style="Display: none;">Main Menu</button>
     </div>
-
+	<audio id = "music" src = "MenuMusic.wav" autoplay = "true"></audio>
+	<audio id = "lavamove" src = "LavaMove.wav" autoplay = "true"></audio>
+	<audio id = "bombaudio" src = "BombAudio.mp3" autoplay = "true"></audio>
 	<script>
 		//calls WebAPI for animaton loop, dependant on the browser being used.
 		var requestAnimationFrame = window.requestAnimationFrame || 
@@ -298,17 +300,23 @@
 		var bombs = new Array();
 		var explosion = new Array();
 
+		var music = document.getElementById("music");
+		var lavaAudio = document.getElementById("lavamove");
+		var bombAudio = document.getElementById("bombaudio");
+
 		//image class
 		class StaticImage
 		{
 			constructor(xpos, ypos, width, height)
 			{
+			//base variables to hold the objects position, width and height
 				this.m_xpos = xpos;
 				this.m_ypos = ypos;
 				this.m_width = width;
 				this.m_height = height;
 			}
 
+			//this method moves the object based on the negative of the inputed x position
 			move(xpos)
 			{
 				this.m_xpos -= xpos;
@@ -326,6 +334,7 @@
 
 				this.m_exploded = false;
 
+				//checks the inputed type and adjusts the amount of points given and the obstacles durability based on the type.
 				if(this.m_type === 2)
 				{
 					this.m_points = 10;
@@ -347,14 +356,17 @@
 				}
 			}
 
+			//this function checks to see if the obstacle has collided with any of the explosions
 			checkExplosive(list)
 			{
 				var m_list = list;
 
+				//checks to see if the obstacles "exploded" value is set to false
 				if(this.m_exploded === false)
-				{
+				{	//checks each item in the explosion list
 					for(var i = 0; i< m_list.length; i++)
-					{
+					{	
+					//checks the collision of the obstacle and the currently selected explosion tile, it it returns as true then the m_exploded variable is set to true and the function then stops running the loop
 						if(checkCollision(this, m_list[i]))
 						{
 							this.m_exploded = true;
@@ -362,6 +374,7 @@
 						}
 					}
 
+					//lowers durability of this obstacle if an explosion has been collided with
 					if(this.m_exploded)
 					{
 						this.m_durability--;
@@ -369,6 +382,7 @@
 				}
 				else
 				{
+				//loops through each explosion and checks to see if the obstacle is still colliding with an explosion. If it is not, then its durability can be lowered by another explosion.
 					for(var i = 0; i< m_list.length; i++)
 					{
 						if(!checkCollision(this, m_list[i]))
@@ -385,6 +399,7 @@
 				}
 			}
 
+			//draws the obstacle using an image based on its type. For the obstacles that have higher durability, a cracked version of their image is drawn when their durability gets low.
 			draw()
 			{
 				if(this.m_type === 1)
@@ -433,8 +448,10 @@
 
 			Timer()
 			{
+				//increases the timer variable
 				this.m_timer++;
 
+				//checks to see if the timer has reached its limit and sets the bomb to exploded if it has.
 				if(this.m_timer >= this.m_maxTime)
 				{
 					this.m_explode = true;
@@ -443,6 +460,7 @@
 
 			drawBomb()
 			{
+				//draws the object based on its position values and width and height values.
 				ctx.drawImage(imgBomb, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
             }
         }
@@ -466,11 +484,11 @@
 
 				this.m_spriteWidth = 128;
 				this.m_spriteHeight = 128;
-				
             }
 
             Timer()
             {
+				//this variable creates an up to date timer in milliseconds that is used to alter the time it takes to move the animation frame to the next frame.
                 var m_elapsedTime = (Date.now() - this.m_startTime)/1000;
 				this.m_startTime = Date.now();
 
@@ -478,28 +496,34 @@
 				this.m_frameTimer = this.m_frameTimer - m_elapsedTime;
 				if(this.m_frameTimer <= 0)
 				{
+					//sets the frame timer to the max timer value
 					this.m_frameTimer = this.m_frameTimeMax;
-
+						
+						//moves the xframe to the next position on the sprite sheet
 						this.m_frameX++;
 
+						//checks to see if the xframe has reached the max number of xframes.  If this is true, the xframe is reset back to 0 and the Yframe is increased
+						//this causes the animation rectangle to move to the next row and restart back at the left of the sprite sheet
 						if(this.m_frameX >= this.m_frameXMax)
 						{
                             this.m_frameX = 0;
                             this.m_frameY++;
 						}
-						
+					
+					//increases the number of frames that have passed.
 					this.m_frame++;
-					//reset frames to 0 in event that there are empty spaces on sprite sheet
+					//checks if the frames has reached the maximum number
 					if(this.m_frame > this.m_frameMax)
 					{
+						//sets the explosion to being finished so it can be removed
 						this.m_explode = true;
 					}
 				}
-				console.log(this.m_frame);
             }
 
             drawExplode()
 			{
+				//draws the explosion tile at the using the animation code in the timer method. This allows the specific part of the sprite sheet to be shown on the screen.
 				ctx.drawImage(imgExplode, this.m_spriteWidth*this.m_frameX, this.m_spriteHeight*this.m_frameY, this.m_spriteWidth, this.m_spriteHeight, this.m_xpos, this.m_ypos, this.m_width, this.m_height);
 			}
         }
@@ -509,33 +533,43 @@
 			var m_bomb = bomb;
 			var m_detonate = explode;
 
+			//checks through every item in the bomb array
 			for(var i = 0; i < m_bomb.length; i++)
 			{
+				//updates the bombs position and calls the bombs update function
 				m_bomb[i].move(xpos);
 				m_bomb[i].Timer();
 
-				//console.log(m_bomb[i]);
 
+				//checks to see if the currently selected bomb has been set to exploded
 				if(m_bomb[i].m_explode)
 				{
+				//plays the bomb explosion audio, generates an explosion using the bombs position and uses the explosion array as a place to store the explosion objects and removes the bomb from the array.
+					bombAudio.play();
 					generateExplosion(m_bomb[i], explode);
-					m_bomb.splice(i, 1);				
+					m_bomb.splice(i, 1);
+					i--;
 				}			
 			}
 
+			//checks through every item in the explosion array
 			for(var i = 0; i < m_detonate.length; i++)
 			{
+				//updates the bombs position and calls the bombs update function
 				m_detonate[i].move(xpos);
 				m_detonate[i].Timer();
 
+				//checks to see if the currently selected explosion has been set to exploded
 				if(m_detonate[i].m_explode)
 				{
+					//removes the explosion tile from the array
 					m_detonate.splice(i, 1);
+					i--;
 				}			
 			}
 		}
 
-		function generateExplosion(bomb, list)
+		function generateExplosion(bomb, list, audio)
 		{
 			var m_bomb = bomb;
 			var m_explosions = list;
@@ -545,19 +579,24 @@
 			var leftcheck = false;
 			var rightcheck = false;
 
+			//creates first explosion tile at bombs position
 			m_explosions.push(new Explosion(m_bomb.m_xpos, m_bomb.m_ypos, 40, 40, 0.5, 0.1, 4, 4, 14));
 
+			//loops set number of times to generate explosions
 			for(var i = 0; i<2; i++)
 			{
+				//checks if the generator has hit an impassable tile before
 				if(topcheck === false)
 				{
-					var xcol = Math.floor((m_bomb.m_xpos  + (m_bomb.m_width/4))/map.tileWidth);
-					var ycol = Math.floor((m_bomb.m_ypos + (m_bomb.m_width/4) - ((i+1)*40))/map.tileHeight);
+					//variables to check which tile on the grid the bomb was on.
+					var xcol = Math.round((m_bomb.m_xpos)/map.tileWidth);
+					var ycol = Math.round((m_bomb.m_ypos - ((i+1)*40))/map.tileHeight);
 
+					//gets the value of the tile from the maps array to find out the type of tile the bomb was on
 					var tile = map.getTile(xcol, ycol);
 
-					console.log(tile);
-
+					
+					//if the value of tile was 1, an explosion is generated in this direction. If not then no more explosions will be generated in this direction
 					switch(tile)
 					{
 					case 1:
@@ -568,10 +607,11 @@
 						break;
 					}
 				}
+				//same as above but different directions
 				if(botcheck === false)
 				{
-					var xcol = Math.floor((m_bomb.m_xpos  + (m_bomb.m_width/4))/map.tileWidth);
-					var ycol = Math.floor((m_bomb.m_ypos + (m_bomb.m_width/4) + ((i+1)*40))/map.tileHeight);
+					var xcol = Math.round((m_bomb.m_xpos)/map.tileWidth);
+					var ycol = Math.round((m_bomb.m_ypos + ((i+1)*40))/map.tileHeight);
 
 					var tile = map.getTile(xcol, ycol);
 
@@ -587,8 +627,8 @@
 				}
 				if (leftcheck === false)
 				{
-					var xcol = Math.floor((m_bomb.m_xpos + (m_bomb.m_width/4) - ((i+1)*40))/map.tileWidth);
-					var ycol = Math.floor((m_bomb.m_ypos + (m_bomb.m_width/4))/map.tileHeight);
+					var xcol = Math.round((m_bomb.m_xpos- ((i+1)*40))/map.tileWidth);
+					var ycol = Math.round((m_bomb.m_ypos)/map.tileHeight);
 
 
 
@@ -606,8 +646,8 @@
 				}
 				if (rightcheck === false)
 				{
-					var xcol = Math.floor((m_bomb.m_xpos + (m_bomb.m_width/4) + ((i+1)*40))/map.tileWidth);
-					var ycol = Math.floor((m_bomb.m_ypos + (m_bomb.m_width/4))/map.tileHeight);
+					var xcol = Math.round((m_bomb.m_xpos + ((i+1)*40))/map.tileWidth);
+					var ycol = Math.round((m_bomb.m_ypos)/map.tileHeight);
 
 					var tile = map.getTile(xcol, ycol);
 
@@ -628,15 +668,19 @@
 		{
 			var m_xpos = xpos;
 			
+			//loops 14 times to generate obstacles.
 			for(var j = 0; j<14; j++)
 			{
+				//loops through each tile within the currently selected column on the map
 				for(var i = 0; i<(map.mapHeight-2); i++)
 				{
 					//random number between 1 and 100
 					var rng = Math.floor((Math.random() * 100) + 1);
 					
+					//checks to see if the random number is between these values. If they are a rock is generated
 					if(rng >= 40 && rng < 88)
 					{
+						//checks the current tile in the column to determine if an object can be placed there or not
 						var tile = map.getTile(m_xpos, i+1);
 						switch(tile)
 						{
@@ -647,6 +691,7 @@
 								break;
 						}
 					}
+					//checks to see if the random number is between these values. If they are a green gem is generated
 					else if(rng >= 88 && rng < 94)
 					{
 						var tile = map.getTile(m_xpos, i+1);
@@ -659,6 +704,7 @@
 								break;
 						}
 					}
+					//checks to see if the random number is between these values. If they are a blue gem is generated
 					else if(rng >= 94 && rng < 99)
 					{
 						var tile = map.getTile(m_xpos, i+1);
@@ -671,6 +717,7 @@
 								break;
 						}
 					}
+					//checks to see if the random number is between these values. If they are a yellow gem is generated
 					else if(rng >= 99)
 					{
 						var tile = map.getTile(m_xpos, i+1);
@@ -694,6 +741,8 @@
 			var object1 = obj1;
 			var object2 = obj2;
 
+			//checcks to see if the two objects are colliding with eachother by using their x and y positions, as well as their width and height.
+			//if the objects are colliding this function returns as true, otherwise it returns false.
 			if((object1.m_xpos < object2.m_xpos + object2.m_width) &&
 				(object1.m_xpos + object1.m_width > object2.m_xpos) &&
 				(object1.m_ypos < object2.m_ypos  + object2.m_height) &&
@@ -727,16 +776,11 @@
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 			],
 
+			//function that returns the value in the tilemap array based on the x and y coordinates put in
 			getTile: function(x, y)
 			{
-				return this.tileMap[y * map.mapWidth + x]
+				return this.tileMap[y * this.mapWidth + x]
 			},
-
-			/*isWalkable: function(x, y)
-			{
-				return this.tileMap[y + x]
-				console.log(tileMap[y + x]);
-			}*/
 		};
 
 		class lavaWall extends TimedObject
@@ -746,20 +790,26 @@
 				super(xpos, ypos, width, height, timer, maxTimer)
 			}
 
+			//this method moves the wall based on the players x position and periodically through the use of a timer
 			moveWal(xpos)
 			{
+				//increases the timer variable
 				this.m_timer++;
 
+				//checks to see if the timer has reached its max
 				if(this.m_timer >= this.m_maxTime)
 				{
+					//moves the lava wall one tile and resets the timer. The lava audio is also playes
 					this.m_xpos += map.tileWidth;
 					this.m_timer = 0;
-					this.moveTime--;
+					lavaAudio.play();
 				}
 
+				//updates the walls position based on the input x position
 				this.m_xpos -= xpos;
 			}
 
+			//this function resets the lava wall to its start position and sets the timer to 0
 			reset()
 			{
 				this.m_xpos = -width+40;
@@ -806,6 +856,8 @@
 				this.m_spriteWidth = 24;
 				this.m_spriteHeight = 32;
 
+				this.m_ismoving = false;
+
 				this.bombDropped = false;
 				this.playerCol = 
 				{
@@ -820,13 +872,21 @@
 			{
 
 				//Map looping
+				//Checks to see if the x position is less than 0
 				if(this.m_xpos < 0)
 				{
+					//sets the x position to 560 and reset the x velocity
 					this.m_xpos = 560;
+					this.velX = 0;
 				}
+				//Checks to see if the x position is greater than 560
+
 				else if(this.m_xpos > 560)
 				{
+					//sets the x position to 0 and reset the x velocity
 					this.m_xpos = 0;
+					this.velX = 0;
+					//generates a new set of obstacles
 					generateObstales(13, obstacles);
 				}
 
@@ -834,33 +894,41 @@
 				var xcol = Math.floor((this.m_xpos)/map.tileWidth);
 				var ycol = Math.floor((this.m_ypos)/map.tileHeight);
 
-				//Bomb dropping via the spacebar
+				//Bomb dropping via the spacebar with a boolean variable to check if the button has been let go of
 				if (keys[32] && this.bombDropped === false) 
 				{
+					//sets bomb dropped to true and changes the xcol and ycol variables to determine what tile the player is on
 					this.bombDropped = true;
 					xcol = Math.floor((this.m_xpos+(this.m_width/2))/map.tileWidth);
 					ycol = Math.floor((this.m_ypos+(this.m_height/2))/map.tileHeight);
-				
+
+					//places a bomb using the xcol and ycol variables multiplied by the maps tile width in order to position them on the tile instead of where the player actually was
 					bombs.push(new TimedObject((xcol*40-this.m_xpos)+(6*40), ycol*40, 40, 40, 0, 240));			
 				}
+				//checks to see if the spacebar has been let go
 				else if(keys[32] === false && this.bombDropped)
 				{
 					this.bombDropped = false
 				}
 
-
+				//checks if the down key has been pressed
 				if (keys[40]) 
 				{
+					//sets the player to being moving for animation. Sets the yframe to 0 to show the first row on the player sprite sheet.
+					this.m_ismoving = true;
 					this.m_frameY = 0;
 
+					//colcheck variable to show if player has collided with something
 					var colCheck = false;
+					//collision variables used to track players tile collision
 					xcol = Math.floor((this.m_xpos+(this.m_width/2))/map.tileWidth);
 					ycol = Math.floor((this.m_ypos+(this.m_height))/map.tileHeight);
 
-
+					//sets the diretion variable to the direction the player is moving and calls the update col method to alter the player col variable
 					var direction = "down";
 					this.updateCol(xcol, ycol, direction);
 
+					//loops through each of the obstacles and checks if the player has collided with any of them
 					for(var i = 0; i<obstacles.length; i++)
 					{
 						if(checkCollision(this.playerCol, obstacles[i]))
@@ -869,12 +937,13 @@
 						}
 					}
 
+					//if the player has not collided with any obstacles, this statement is run
 					if(!colCheck)
 					{			
-						// down arrow
+						//checks to see which tile the player is walking into
 						var tile = map.getTile(xcol,ycol);
-						//console.log(tile);
-
+						
+						//moves the player down if the player has not collided with a wall
 						switch(tile)
 						{
 							case 1:
@@ -885,8 +954,10 @@
 						}
 					}					
 				}
+				//same code as above but different direction
 				else if (keys[38]) 
 				{
+					this.m_ismoving = true;
 					this.m_frameY = 1;
 
 					var colCheck = false;
@@ -922,8 +993,10 @@
 						}
 					}
 				}
+				//same code as above but different direction
 				else if (keys[39]) 
 				{
+					this.m_ismoving = true;
 					this.m_frameY = 3;
 					var colCheck = false;
 					xcol = Math.floor(((this.m_xpos+(this.m_width))/map.tileWidth));
@@ -961,8 +1034,10 @@
 						}
 					}
 				}
+				//same code as above but different direction
 				else if (keys[37]) 
 				{
+					this.m_ismoving = true;
 					this.m_frameY = 2;
 					var colCheck = false;
 					xcol = Math.floor(((this.m_xpos)/map.tileWidth));
@@ -1002,34 +1077,45 @@
 						}
 					}
 				}
-			
+				else
+				{
+					this.m_ismoving = false;
+				}
+				
+				//multiplies the x and y velocities by the speed value and updates the x and y positions with these velocities
 				this.m_VelX *= this.m_speed;
 				this.m_VelY *= this.m_speed;
 				this.m_xpos += this.m_VelX;
 				this.m_ypos += this.m_VelY;
 			}
 
+			//this method updates the players collision variable to be infront of them no matter which direction they are moving
 			updateCol(colx, coly, direction)
 			{
+				//variables to store the input values
 				var xcol = colx;
 				var ycol = coly;
 				var dir = direction;
 
+				//checks if the player is moving up and places the collision rectangle above the player
 				if(dir === "up")
 				{
 					this.playerCol.m_xpos = xcol + (6*40);
 					this.playerCol.m_ypos = ycol*40;
 				}
+				//checks if the player is moving down and places the collision rectangle below the player
 				if(dir === "down")
 				{
 					this.playerCol.m_xpos = xcol + (6*40);
 					this.playerCol.m_ypos = ycol*40;
 				}
+				//checks if the player is moving left and places the collision rectangle to the left of the player
 				if(dir === "left")
 				{
 					this.playerCol.m_xpos = (xcol + (6*40))-15;
 					this.playerCol.m_ypos = ycol*40;
 				}
+				//checks if the player is moving right and places the collision rectangle to the right of the player
 				if(dir === "right")
 				{
 					this.playerCol.m_xpos = (xcol + (6*40))+10;
@@ -1037,6 +1123,7 @@
 				}
 			}
 
+			//resets the player values to their original values
 			reset()
 			{
 				this.m_xpos = 0;
@@ -1051,26 +1138,37 @@
 				var m_elapsedTime = (Date.now() - this.m_startTime)/1000;
 				this.m_startTime = Date.now();
 
-				//only update frames when timer is below 0
-				this.m_frameTimer = this.m_frameTimer - m_elapsedTime;
-				if(this.m_frameTimer <= 0)
+				//checks to see if the player is moving and animates the player if true
+				if(this.m_ismoving)
 				{
-					this.m_frameTimer = this.m_frameTimeMax;
-
-						this.m_frameX++;
-
-						if(this.m_frameX >= this.m_frameXMax)
-						{
-							this.m_frameX = 0;
-						}
-						
-					this.m_frame++;
-					//reset frames to 0 in event that there are empty spaces on sprite sheet
-					if(this.m_frame > this.m_frameMax)
+					//same animation code as used in the explosion class except the y frame is determined by the direction the player is moving
+					this.m_frameTimer = this.m_frameTimer - m_elapsedTime;
+					if(this.m_frameTimer <= 0)
 					{
-					  this.m_frame = 0;
-					  this.m_frameX = 0;
+						this.m_frameTimer = this.m_frameTimeMax;
+
+							this.m_frameX++;
+
+							if(this.m_frameX >= this.m_frameXMax)
+							{
+								this.m_frameX = 0;
+							}
+						
+						this.m_frame++;
+						//reset frames to 0 in event that there are empty spaces on sprite sheet
+						if(this.m_frame > this.m_frameMax)
+						{
+						  this.m_frame = 0;
+						  this.m_frameX = 0;
+						}
 					}
+				}
+				//if the player is not moving, resets the x animation frames to 0 to make the placer look like they are standing still
+				else
+				{
+					this.m_frame = 0;
+					this.m_frameX = 0;
+					this.m_frameTimer = this.m_frameTimeMax;
 				}
 
 				ctx.drawImage(playerSprite, this.m_spriteWidth*this.m_frameX, this.m_spriteHeight*this.m_frameY, this.m_spriteWidth, this.m_spriteHeight, (width/2) - (this.m_width/2), this.m_ypos, this.m_width, this.m_height);
@@ -1081,8 +1179,10 @@
 
 		function Reset()
 		{
+			//sets score to 0
 			score = 0;
 			
+			//disables all HTML menu objects and enables the game canvas
 			playBtn.style.display = "none";
 			tutBtn.style.display = "none";
 			exitBtn.style.display = "none";
@@ -1095,7 +1195,7 @@
 			returnToMnBtn.style.display = "none";
 
 			gameState = "Game";
-			//empties bomb, explosion and obstacle arrays and regenerates the obstacles
+			//empties bomb, explosion and obstacle arrays
 			for(var i = 0; i< bombs.length; i++)
 			{
 				bombs.splice(i,1);
@@ -1112,26 +1212,39 @@
 				i--;
 			}
 
+			//resets the player and lava wall
 			player.reset();
 			lava.reset();
+
+			//updates the music and sets it to play and loop.
+			music.src = "GameMusic.mp3";
+			music.play();
+			music.loop = "true";
+
+			//generates new obstacles
 			generateObstales(13, obstacles);
         }
 
         function Tutorial()
         {
+			//sets tutpage to 0 so the first page is displayed
             tutpage = 0;
 
+			//changed the gamestate to tutorial
             gameState = "Tutorial";
 
+			//disables main menu assets
             playBtn.style.display = "none";
 			tutBtn.style.display = "none";
             exitBtn.style.display = "none";
 
+			//enables tutorial assets
             previousbtn.style.display = "initial";
             nextbtn.style.display = "initial";
             tutMainbtn.style.display = "initial";
         }
-
+		
+		//increases value of tutpage and resets it to 0 if it is higher than the number of tutorial pages
         function NextTut()
         {
             tutpage++;
@@ -1141,6 +1254,8 @@
                 tutpage = 0;
             }
         }
+
+		//decreases value of tutpage and resets it to the number of tutorial pages  if it is lower than 0
         function PrevTut()
         {
             tutpage--;
@@ -1153,22 +1268,32 @@
 
 		function ReturnMain()
 		{
+		//changes the gamestate to main menu
 			gameState = "Main";
 
+			//changes the background image
 			backgroundImg.style.display = "initial";
 			backgroundImg.src = mainMenuImg.src;
 
+			//disables game over assets
 			scoreDisplay.style.display = "none";
 			playAgainBtn.style.display = "none";
             returnToMnBtn.style.display = "none";
 
+			//disables tutorial assets
             previousbtn.style.display = "none";
             nextbtn.style.display = "none";
             tutMainbtn.style.display = "none";
 
+			//activates main menu assets
 			playBtn.style.display = "initial";
 			tutBtn.style.display = "initial";
 			exitBtn.style.display = "initial";
+
+			//changes the music to the main menu music
+			music.src = "MenuMusic.wav";
+			music.play();
+			music.loop = "true";
 		}
 
 		function GameOver()
@@ -1198,7 +1323,13 @@
 			returnToMnBtn.style.display = "initial";
 		}
 
-		//creates new function on load that runs the update function?
+		function startMusic()
+		{
+			music.play();
+			music.loop = "true";
+		}
+
+		//creates new function on load that runs when the page is first loaded
 		window.addEventListener("load", function () 
 		{
 			start();
@@ -1239,20 +1370,21 @@
 			imgLava.src = 'Lava.png';
 			highscore = localStorage.getItem(highscore);
 
-			generateObstales(13, obstacles);
+			startMusic();
 		}
 		
-		
+		//this function is run on every window update on the browser
 		function update() 
 		{
+			//these if statements check which gamestate the game is currently in and updates the necessary functions based on this
+			//this helps keep the framerate more stable.
 			if(gameState === "Main")
 			{
-				//ctx.clearRect(0, 0, width, height);
 
-				//ctx.drawImage(mainMenuImg,0,0,width,height);
             }
             else if(gameState === "Tutorial")
             {
+				//changes the background image that is being displayed by using the tutpage value
                 if (tutpage === 0)
                 {
                     backgroundImg.src = controlImg.src;
@@ -1268,17 +1400,20 @@
 			}
 			else if(gameState === "Game")
 			{
-				player.updatePlayer();
-
+				
+				//loops through each explosion
 				for(var i = 0; i<explosion.length; i++)
 				{
+					//checks to see if the player character collides with any of the explosions. Runs the gameover function is this returns true
 					if(checkCollision(player.playerCol, explosion[i]))
 					{
 						GameOver();
 					}
 
+					//loops through all the bombs
 					for(var j = 0; j<bombs.length; j++)
 					{
+						//checks to see if any of the bombs collides with an explosion. If they do that bomb is also detonated.
 						if(checkCollision(bombs[j], explosion[i]))
 						{
 							bombs[j].m_explode = true;
@@ -1286,22 +1421,30 @@
 					}
 				}
 
+				//if the player collides with the lava the gameover function is run
 				if(checkCollision(player.playerCol, lava))
 				{
 					GameOver();
 				}
 
+				//calls the bomb manager function
 				bombManager(player.m_VelX, bombs, explosion);
 
+				//loops through each obstacle
 				for(var i = 0; i<obstacles.length; i++)
 				{
+					//checks to see if the obstacle has been hit by an explosion by calling the checkExplosive method
 					obstacles[i].checkExplosive(explosion);
+
+					//checks if the obstacles durability has reached 0
 					if(obstacles[i].m_durability <= 0)
 					{
+						//insreases the players score by the score of the obstacle that was destroyed and removes that obstacle from the array.
 						score += obstacles[i].m_points;
 						obstacles.splice(i,1);
 						i--;
 					}
+					//checks if the obstacle has collided with the lava and removes them if they have
 					else if(checkCollision(obstacles[i], lava))
 					{
 						obstacles.splice(i,1);
@@ -1309,10 +1452,15 @@
 					}
 					else
 					{
+						//updates the obstacles position
 						obstacles[i].move(player.m_VelX);	
 					}
 				}
-			
+				
+				//updates the player character
+				player.updatePlayer();
+
+				//clears all drawn images from the previosu update and removes them from the canvas
 				ctx.clearRect(0, 0, width, height);
 			
 				//for loop to draw each tile
@@ -1320,8 +1468,9 @@
 				{
 					for(var y = 0; y< map.mapHeight; y++)
 					{
+						//checks the value of the tile based on map width and height
 						var tile = map.getTile(x,y);
-						//console.log(tile);
+						//draws a different image based on the tile
 						switch(tile)
 						{
 							case 0:
@@ -1336,8 +1485,9 @@
 			
 			
 
-				//lavaWall
+				//updates the lava walls position using the lava walls moveWal method
 				lava.moveWal(player.m_VelX);
+				//draws the lavawall
 				lava.drawWall();
 
 				//draw obstacles
@@ -1347,21 +1497,24 @@
 					obstacles[i].draw();
 				}
 			
+				//draws the bombs
 				for(var i = 0; i<bombs.length; i++)
 				{
 					bombs[i].drawBomb();
 				}
 
+				//draws the explosions
 				for(var i = 0; i<explosion.length; i++)
 				{
 					explosion[i].drawExplode();
 				}
 
-
+				//draws the player character
 				player.drawPlayer();
 
-				ctx.fillRect(player.playerCol.m_xpos, player.playerCol.m_ypos, player.playerCol.m_width, player.playerCol.m_height);
+				//ctx.fillRect(player.playerCol.m_xpos, player.playerCol.m_ypos, player.playerCol.m_width, player.playerCol.m_height);
 
+				//creates a font and displays the score at the bottom left of the screen
 				ctx.font = "16px Comic Sans MS";
 				ctx.fillStyle = "black";
 				ctx.textAlign = "left";
@@ -1369,31 +1522,34 @@
 
 				ctx.textAlign = "right";
 
-
+				//checks if the highsore in the local storage exists or not. Displays temporary value if it doesnt
 				if(highscore == null)
 				{
 					ctx.fillText("Highscore - 0", width - 10, height-16);
 				}
 				else
 				{
+					//displays current highscore if it does exist
 					ctx.fillText("Highscore - " + highscore, width - 10, height-16);
 				}
 			}
 			else if(gameState = "GameOver")
 			{
-				//ctx.clearRect(0, 0, width, height);
-				//ctx.drawImage(gameOverImg,0,0,width,height);
+
 			}
 
+			//runs the update function again when the window is next updated
 			requestAnimationFrame(update);
 		}
 		
+		//checks to see if a key has been pressed and sets these values accordingly depending on which key it was
 		document.body.addEventListener("keydown", function (e) 
 		{
 			keys[e.keyCode] = true;
 			isKeyPressed = true;
 		});
 
+		//checks to see if a key has been let go and updates these values based on that.
 		document.body.addEventListener("keyup", function (e) 
 		{
 			keys[e.keyCode] = false;
